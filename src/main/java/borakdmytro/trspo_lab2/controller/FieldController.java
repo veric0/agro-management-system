@@ -41,7 +41,6 @@ public class FieldController {
     @ResponseStatus(HttpStatus.OK)
     public void update(@PathVariable int id, @NotNull @RequestBody Field field) {
         Field newField = fieldService.getFieldById(id).orElseThrow();
-        newField.setName(field.getName());
         fieldService.updateField(newField);
     }
 
