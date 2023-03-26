@@ -1,5 +1,7 @@
 package borakdmytro.trspo_lab2.controller;
 
+import borakdmytro.trspo_lab2.dto.FarmerDTO;
+import borakdmytro.trspo_lab2.dto.mapper.FarmerMapper;
 import borakdmytro.trspo_lab2.model.Farmer;
 import borakdmytro.trspo_lab2.service.FarmerService;
 import jakarta.validation.constraints.NotNull;
@@ -21,28 +23,33 @@ public class FarmerController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Farmer get(@PathVariable int id) {
-        return farmerService.getFarmerById(id).orElseThrow();
+    public FarmerDTO get(@PathVariable int id) {
+        Farmer farmer = farmerService.getFarmerById(id).orElseThrow();
+        return FarmerMapper.toDTO(farmer);
     }
 
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
-    public List<Farmer> getAll() {
-        return farmerService.getAllFarmers();
+    public List<FarmerDTO> getAll() {
+        return farmerService.getAllFarmers()
+                .stream()
+                .map(FarmerMapper::toDTO)
+                .toList();
     }
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public void post(@NotNull @RequestBody Farmer farmer) {
-        farmerService.saveFarmer(farmer);
+    public void post(@NotNull @RequestBody FarmerDTO farmerDTO) {
+        Farmer newFarmer = FarmerMapper.toFarmer(farmerDTO);
+        farmerService.saveFarmer(newFarmer);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public void update(@PathVariable int id, @NotNull @RequestBody Farmer farmer) {
-        Farmer newFarmer = farmerService.getFarmerById(id).orElseThrow();
-        newFarmer.setName(farmer.getName());
-        farmerService.updateFarmer(newFarmer);
+    public void update(@PathVariable int id, @NotNull @RequestBody FarmerDTO farmerDTO) {
+        Farmer farmer = farmerService.getFarmerById(id).orElseThrow();
+        farmer.setName(farmerDTO.getFarmerName());
+        farmerService.updateFarmer(farmer);
     }
 
     @DeleteMapping("/{id}")

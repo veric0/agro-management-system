@@ -1,5 +1,7 @@
 package borakdmytro.trspo_lab2.controller;
 
+import borakdmytro.trspo_lab2.dto.CropDTO;
+import borakdmytro.trspo_lab2.dto.mapper.CropMapper;
 import borakdmytro.trspo_lab2.model.Crop;
 import borakdmytro.trspo_lab2.service.CropService;
 import jakarta.validation.constraints.NotNull;
@@ -26,28 +28,33 @@ public class CropController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Crop get(@PathVariable int id) {
-        return cropService.getCropById(id).orElseThrow();
+    public CropDTO get(@PathVariable int id) {
+        Crop crop = cropService.getCropById(id).orElseThrow();
+        return CropMapper.toDTO(crop);
     }
 
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
-    public List<Crop> getAll() {
-        return cropService.getAllCrops();
+    public List<CropDTO> getAll() {
+        return cropService.getAllCrops()
+                .stream()
+                .map(CropMapper::toDTO)
+                .toList();
     }
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public void post(@NotNull @RequestBody Crop crop) {
-        cropService.saveCrop(crop);
+    public void post(@NotNull @RequestBody CropDTO cropDTO) {
+        Crop newCrop = CropMapper.toCrop(cropDTO);
+        cropService.saveCrop(newCrop);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public void update(@PathVariable int id, @NotNull @RequestBody Crop crop) {
-        Crop newCrop = cropService.getCropById(id).orElseThrow();
-        newCrop.setName(crop.getName());
-        cropService.updateCrop(newCrop);
+    public void update(@PathVariable int id, @NotNull @RequestBody CropDTO cropDTO) {
+        Crop crop = cropService.getCropById(id).orElseThrow();
+        crop.setName(cropDTO.getCropName());
+        cropService.updateCrop(crop);
     }
 
     @DeleteMapping("/{id}")
