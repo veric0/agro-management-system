@@ -16,6 +16,9 @@ public class Storage {
     @JoinColumn(name = "owner_id", referencedColumnName = "farmer_id")
     private Farmer owner;
 
+    @Column(name = "storage_name")
+    private String name;
+
     @Column(name = "max_volume")
     private double maxVolume;
 
