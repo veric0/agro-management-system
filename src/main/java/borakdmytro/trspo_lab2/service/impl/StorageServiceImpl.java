@@ -7,6 +7,7 @@ import borakdmytro.trspo_lab2.repository.FarmerRepository;
 import borakdmytro.trspo_lab2.repository.StorageDetailsRepository;
 import borakdmytro.trspo_lab2.repository.StorageRepository;
 import borakdmytro.trspo_lab2.service.StorageService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -50,19 +51,23 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
+    @Transactional
     public void saveStorage(Storage storage) {
         Storage newStorage = new Storage();
         newStorage.setName(storage.getName());
         newStorage.setOwner(farmerRepository.findById(storage.getOwner().getId()).orElseThrow());
         newStorage.setMaxVolume(storage.getMaxVolume());
+        storageRepository.save(storage);
     }
 
     @Override
+    @Transactional
     public void updateStorage(Storage storage) {
         Storage newStorage = storageRepository.findById(storage.getId()).orElseThrow();
         newStorage.setName(storage.getName());
         newStorage.setOwner(farmerRepository.findById(storage.getOwner().getId()).orElseThrow());
         newStorage.setMaxVolume(storage.getMaxVolume());
+        storageRepository.save(storage);
     }
 
     @Override
@@ -90,32 +95,41 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void addToStorage(StorageDetails storageDetails, double addVolume) {
+    @Transactional
+    public StorageDetails addToStorage(StorageDetails storageDetails, double addVolume) {
 //        Storage storage = storageDetails.getStorage();
         Storage storage = storageRepository.findById(storageDetails.getStorage().getId()).orElseThrow();
-        if (storage.getFreeSpace() > 0 && storage.getFreeSpace() + addVolume <= storage.getMaxVolume()) {
-            if (addVolume <= storage.getFreeSpace()) {
+        calculateFreeSpace(storage);
+        if (storage.getFreeSpace() > 0) {
+            if (addVolume <= storage.getFreeSpace()) { // якщо є вільне місце то заповнюємо
                 storageDetails.setVolume(storageDetails.getVolume() + addVolume);
-            } else {
+                addVolume = 0;
+            } else { // якщо немає, то заповнюємо усе що можна
                 storageDetails.setVolume(storageDetails.getVolume() + storage.getFreeSpace());
+                addVolume -= storage.getFreeSpace();
             }
             storageDetailsRepository.save(storageDetails);
         }
+        storageDetails.setVolume(addVolume);
+        return storageDetails; // повертає скільки залишилось зайвого зерна
     }
 
     @Override
-    public void removeFromStorage(StorageDetails details, double removeVolume) {
+    @Transactional
+    public StorageDetails removeFromStorage(StorageDetails details, double removeVolume) {
 //        Storage storage = details.getStorage();
         Storage storage = storageRepository.findById(details.getStorage().getId()).orElseThrow();
-        if (removeVolume <= storage.getMaxVolume() - storage.getFreeSpace()) {
-            if (removeVolume < details.getVolume()) {
-                details.setVolume(details.getVolume() - removeVolume);
-                storageDetailsRepository.save(details);
-            } else {
-//                details.setVolume(0);
-                storageDetailsRepository.deleteByStorageIdAndCropId(details.getStorage().getId(), details.getCrop().getId());
-            }
+        calculateFreeSpace(storage);
+        if (removeVolume < details.getVolume()) { // якщо на складі більше зерна ніж треба видалити
+            details.setVolume(details.getVolume() - removeVolume);
+            removeVolume = 0;
+            storageDetailsRepository.save(details);
+        } else { // якщо на складі менше зерна ніж треба видалити
+            removeVolume -= details.getVolume();
+            storageDetailsRepository.deleteByStorageIdAndCropId(details.getStorage().getId(), details.getCrop().getId());
         }
+        details.setVolume(removeVolume);
+        return details; // повертає скільки не вистачило зерна в складі щоб видалити
     }
 
 

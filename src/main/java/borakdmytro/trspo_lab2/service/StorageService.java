@@ -16,6 +16,6 @@ public interface StorageService {
 
     List<StorageDetails> getAllStorageDetails(int storageId);
     StorageDetails getStorageCropDetails(int storageId, int cropId);
-    void addToStorage(StorageDetails storageDetails, double addVolume);
-    void removeFromStorage(StorageDetails storageDetails, double removeVolume);
+    StorageDetails addToStorage(StorageDetails storageDetails, double addVolume);
+    StorageDetails removeFromStorage(StorageDetails storageDetails, double removeVolume);
 }

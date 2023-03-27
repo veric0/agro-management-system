@@ -47,6 +47,8 @@ public class FieldController {
     @ResponseStatus(HttpStatus.CREATED)
     public void post(@NotNull @RequestBody FieldDTO fieldDTO) {
         Field newField = FieldMapper.toField(fieldDTO);
+        newField.setOwner(farmerService.getFarmerById(fieldDTO.getOwnerId()).orElseThrow());
+        newField.setCrop(cropService.getCropById(fieldDTO.getCropId()).orElseThrow());
         fieldService.saveField(newField);
     }
 

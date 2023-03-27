@@ -6,6 +6,7 @@ import borakdmytro.trspo_lab2.dto.mapper.StorageDetailsMapper;
 import borakdmytro.trspo_lab2.dto.mapper.StorageMapper;
 import borakdmytro.trspo_lab2.model.Storage;
 import borakdmytro.trspo_lab2.model.StorageDetails;
+import borakdmytro.trspo_lab2.service.FarmerService;
 import borakdmytro.trspo_lab2.service.StorageService;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +19,12 @@ import java.util.List;
 @RequestMapping("/storages")
 public class StorageController {
     private final StorageService storageService;
+    private final FarmerService farmerService;
 
     @Autowired
-    public StorageController(StorageService storageService) {
+    public StorageController(StorageService storageService, FarmerService farmerService) {
         this.storageService = storageService;
+        this.farmerService = farmerService;
     }
 
     @GetMapping("/{id}")
@@ -44,6 +47,7 @@ public class StorageController {
     @ResponseStatus(HttpStatus.CREATED)
     public void post(@NotNull @RequestBody StorageDTO storageDTO) {
         Storage newStorage = StorageMapper.toStorage(storageDTO);
+        newStorage.setOwner(farmerService.getFarmerById(storageDTO.getOwnerId()).orElseThrow());
         storageService.saveStorage(newStorage);
     }
 
@@ -51,6 +55,7 @@ public class StorageController {
     @ResponseStatus(HttpStatus.OK)
     public void update(@PathVariable int id, @NotNull @RequestBody StorageDTO storageDTO) {
         Storage storage = storageService.getStorageById(id).orElseThrow();
+        storage.setOwner(farmerService.getFarmerById(storageDTO.getOwnerId()).orElseThrow());
         storage.setMaxVolume(storageDTO.getMaxVolume());
         storageService.updateStorage(storage);
     }
@@ -89,15 +94,17 @@ public class StorageController {
 
     @PutMapping("/{storageId}/crops/{cropId}")
     @ResponseStatus(HttpStatus.OK)
-    public void addToStorage(@PathVariable int storageId, @PathVariable int cropId, @NotNull @RequestBody StorageDetailsDTO dto) {
+    public StorageDetailsDTO addToStorage(@PathVariable int storageId, @PathVariable int cropId, @NotNull @RequestBody StorageDetailsDTO dto) {
         StorageDetails storageDetails = storageService.getStorageCropDetails(storageId, cropId);
-        storageService.addToStorage(storageDetails, dto.getVolume());
+        storageDetails = storageService.addToStorage(storageDetails, dto.getVolume());
+        return StorageDetailsMapper.toDTO(storageDetails);
     }
 
     @DeleteMapping("/{storageId}/crops/{cropId}")
     @ResponseStatus(HttpStatus.OK)
-    public void deleteFromStorage(@PathVariable int storageId, @PathVariable int cropId, @NotNull @RequestBody StorageDetailsDTO dto) {
+    public StorageDetailsDTO deleteFromStorage(@PathVariable int storageId, @PathVariable int cropId, @NotNull @RequestBody StorageDetailsDTO dto) {
         StorageDetails storageDetails = storageService.getStorageCropDetails(storageId, cropId);
-        storageService.removeFromStorage(storageDetails, dto.getVolume());
+        storageDetails = storageService.removeFromStorage(storageDetails, dto.getVolume());
+        return StorageDetailsMapper.toDTO(storageDetails);
     }
 }
